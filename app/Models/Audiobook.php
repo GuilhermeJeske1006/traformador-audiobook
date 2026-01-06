@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Audiobook extends Model
 {
     protected $fillable = [
+        'user_id',
         'title',
         'original_filename',
         'pdf_path',
@@ -36,5 +38,10 @@ class Audiobook extends Model
     public function isProcessing(): bool
     {
         return $this->status === 'processing';
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

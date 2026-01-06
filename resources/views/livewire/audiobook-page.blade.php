@@ -34,7 +34,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-zinc-900 dark:text-white">0</p>
+                    <p class="text-2xl font-bold text-zinc-900 dark:text-white">{{ $qtdAudiobooks }}</p>
                     <p class="text-sm text-zinc-600 dark:text-zinc-400">Audiobooks Criados</p>
                 </div>
             </div>

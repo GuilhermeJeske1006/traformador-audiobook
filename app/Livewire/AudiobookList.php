@@ -28,7 +28,7 @@ class AudiobookList extends Component
 
     public function delete($id)
     {
-        $audiobook = Audiobook::findOrFail($id);
+        $audiobook = Audiobook::where('user_id', auth()->id())->findOrFail($id);
 
         if ($audiobook->pdf_path && \Storage::disk('public')->exists($audiobook->pdf_path)) {
             \Storage::disk('public')->delete($audiobook->pdf_path);
@@ -46,6 +46,7 @@ class AudiobookList extends Component
     public function render()
     {
         $audiobooks = Audiobook::query()
+            ->where('user_id', auth()->id())
             ->when($this->search, function ($query) {
                 $query->where('title', 'like', '%' . $this->search . '%')
                     ->orWhere('original_filename', 'like', '%' . $this->search . '%');

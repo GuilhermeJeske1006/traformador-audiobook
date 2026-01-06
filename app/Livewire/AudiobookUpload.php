@@ -46,6 +46,7 @@ class AudiobookUpload extends Component
             $path = $this->pdfFile->storeAs('pdfs', $filename, 'public');
 
             $audiobook = Audiobook::create([
+                'user_id' => auth()->id(),
                 'title' => $this->title,
                 'original_filename' => $this->pdfFile->getClientOriginalName(),
                 'pdf_path' => $path,
