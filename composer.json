@@ -12,6 +12,7 @@
         "php": "^8.2",
         "google/cloud-text-to-speech": "^2.6",
         "laravel-lang/lang": "^15.26",
+        "laravel/cashier": "^16.2",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.42",
