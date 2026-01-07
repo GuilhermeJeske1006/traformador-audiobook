@@ -43,10 +43,14 @@ class ProcessAudiobookJob implements ShouldQueue
             ]);
 
             $audioFilename = 'audiobook_' . $this->audiobook->id . '_' . time() . '.mp3';
-            $audioPath = $ttsService->convertTextToSpeech($text, $audioFilename);
+
+            // Gera áudio com timecodes para sincronização precisa de legendas
+            $voiceName = $this->audiobook->voice_name ?? 'pt-BR-Standard-A';
+            $result = $ttsService->convertTextToSpeechWithTimecodes($text, $audioFilename, $voiceName);
 
             $this->audiobook->update([
-                'audio_path' => $audioPath,
+                'audio_path' => $result['audio_path'],
+                'timecodes' => $result['timecodes'],
                 'status' => 'completed',
                 'processing_progress' => 100,
             ]);

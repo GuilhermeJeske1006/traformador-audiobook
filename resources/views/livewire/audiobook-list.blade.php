@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.5s="checkProcessingStatus">
     <div class="rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
         <!-- Header -->
         <div class="border-b border-zinc-200 p-6 dark:border-zinc-700">
@@ -19,12 +19,35 @@
 
         <!-- Content -->
         <div class="p-6">
+            <!-- Processing Status Indicator -->
+            @if ($hasProcessingAudiobooks)
+                <div class="mb-6 flex items-start gap-3 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                    <svg class="h-5 w-5 flex-shrink-0 animate-spin text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-sm font-medium text-blue-800 dark:text-blue-200">Processando audiobooks...</p>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">A página está atualizando automaticamente a cada 5 segundos</p>
+                    </div>
+                </div>
+            @endif
+
             @if (session()->has('success'))
                 <div class="mb-6 flex items-start gap-3 rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
                     <svg class="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div class="mb-6 flex items-start gap-3 rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
+                    <svg class="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
                 </div>
             @endif
 
@@ -138,12 +161,51 @@
                                                     </audio>
                                                 </div>
                                             @endif
+
+                                            <!-- Video Section -->
+                                            @if ($audiobook->hasVideo())
+                                                <div class="mt-4">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <svg class="h-4 w-4 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5" />
+                                                        </svg>
+                                                        <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Vídeo com legendas disponível</span>
+                                                    </div>
+                                                    <video controls class="w-full rounded-lg" style="max-width: 640px;">
+                                                        <source src="{{ Storage::url($audiobook->video_path) }}" type="video/mp4">
+                                                        Seu navegador não suporta o elemento de vídeo.
+                                                    </video>
+                                                </div>
+                                            @elseif ($audiobook->isVideoProcessing())
+                                                <div class="mt-4 flex items-start gap-2 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                                                    <svg class="h-4 w-4 flex-shrink-0 animate-spin text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <div>
+                                                        <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Gerando vídeo com legendas...</p>
+                                                        <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">Progresso: {{ $audiobook->video_progress }}%</p>
+                                                    </div>
+                                                </div>
+                                            @elseif ($audiobook->isVideoFailed())
+                                                <div class="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+                                                    <svg class="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                                    </svg>
+                                                    <div>
+                                                        <p class="text-sm font-medium text-red-700 dark:text-red-300">Erro ao gerar vídeo</p>
+                                                        @if ($audiobook->video_error_message)
+                                                            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $audiobook->video_error_message }}</p>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Actions -->
-                                <div class="flex flex-shrink-0 items-start gap-2">
+                                <div class="flex flex-shrink-0 flex-col items-end gap-2">
                                     @if ($audiobook->isCompleted() && $audiobook->audio_path)
                                         <a href="{{ Storage::url($audiobook->audio_path) }}"
                                            download
@@ -151,7 +213,29 @@
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                             </svg>
-                                            Baixar
+                                            Baixar Áudio
+                                        </a>
+                                    @endif
+
+                                    @if ($audiobook->canGenerateVideo())
+                                        <button
+                                            wire:click="openVideoCustomizationModal({{ $audiobook->id }})"
+                                            class="inline-flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 dark:hover:bg-violet-900/50">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5" />
+                                            </svg>
+                                            Gerar Vídeo
+                                        </button>
+                                    @endif
+
+                                    @if ($audiobook->hasVideo())
+                                        <a href="{{ Storage::url($audiobook->video_path) }}"
+                                           download
+                                           class="inline-flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 dark:hover:bg-violet-900/50">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                            </svg>
+                                            Baixar Vídeo
                                         </a>
                                     @endif
 
@@ -212,4 +296,118 @@
         @endif
         </div>
     </div>
+
+    <!-- Modal de Personalização de Vídeo -->
+    @if ($showVideoCustomizationModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" wire:click="closeVideoCustomizationModal">
+            <div class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-zinc-800" wire:click.stop>
+                    <!-- Modal Header -->
+                    <div class="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">
+                                Personalizar Vídeo
+                            </h3>
+                            <button wire:click="closeVideoCustomizationModal" class="rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="px-6 py-4">
+                        <div class="space-y-5">
+                            <!-- Background Type -->
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
+                                    Tipo de Fundo do Vídeo
+                                </label>
+                                <div class="flex gap-3">
+                                    <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-zinc-300 bg-white p-3 transition-all hover:border-violet-400 dark:border-zinc-600 dark:bg-zinc-900 dark:hover:border-violet-500">
+                                        <input type="radio" wire:model.live="videoBackgroundType" value="gradient" class="h-4 w-4 border-zinc-300 text-violet-600 focus:ring-2 focus:ring-violet-500/20 dark:border-zinc-600 dark:bg-zinc-700">
+                                        <span class="text-sm font-medium text-zinc-900 dark:text-white">Gradiente</span>
+                                    </label>
+                                    <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border border-zinc-300 bg-white p-3 transition-all hover:border-violet-400 dark:border-zinc-600 dark:bg-zinc-900 dark:hover:border-violet-500">
+                                        <input type="radio" wire:model.live="videoBackgroundType" value="solid" class="h-4 w-4 border-zinc-300 text-violet-600 focus:ring-2 focus:ring-violet-500/20 dark:border-zinc-600 dark:bg-zinc-700">
+                                        <span class="text-sm font-medium text-zinc-900 dark:text-white">Sólido</span>
+                                    </label>
+                                </div>
+                                @error('videoBackgroundType')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Background Color -->
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
+                                    Cor de Fundo
+                                </label>
+                                <div class="grid grid-cols-5 gap-3">
+                                    @foreach($this->backgroundColors as $color => $colorName)
+                                        <label class="group relative cursor-pointer">
+                                            <input type="radio" wire:model.live="videoBackgroundColor" value="{{ $color }}" class="peer sr-only">
+                                            <div class="h-16 w-full rounded-lg border-2 border-transparent transition-all peer-checked:border-violet-600 peer-checked:ring-2 peer-checked:ring-violet-500/20 group-hover:scale-105 dark:peer-checked:border-violet-400" style="background-color: {{ $color }}"></div>
+                                            <span class="absolute inset-0 flex items-center justify-center text-sm font-medium text-white opacity-0 peer-checked:opacity-100">✓</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @error('videoBackgroundColor')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Subtitle Style -->
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
+                                    Estilo de Legenda
+                                </label>
+                                <select wire:model.live="subtitleStyle" class="block w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm transition-all focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:focus:border-violet-400">
+                                    <option value="default">Padrão (Texto branco com sombra)</option>
+                                    <option value="bold">Negrito (Texto mais forte)</option>
+                                    <option value="outline">Contorno (Borda ao redor do texto)</option>
+                                    <option value="box">Caixa (Fundo semi-transparente)</option>
+                                </select>
+                                @error('subtitleStyle')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Font Size -->
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
+                                    Tamanho da Fonte: <span class="font-semibold text-violet-600 dark:text-violet-400">{{ $subtitleFontSize }}px</span>
+                                </label>
+                                <input type="range" wire:model.live="subtitleFontSize" min="16" max="48" step="2" class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 accent-violet-600 dark:bg-zinc-700">
+                                <div class="mt-1 flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                                    <span>16px</span>
+                                    <span>48px</span>
+                                </div>
+                                @error('subtitleFontSize')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="border-t border-zinc-200 px-6 py-4 dark:border-zinc-700">
+                        <div class="flex justify-end gap-3">
+                            <button
+                                wire:click="closeVideoCustomizationModal"
+                                type="button"
+                                class="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                                Cancelar
+                            </button>
+                            <button
+                                wire:click="generateVideoWithCustomization"
+                                type="button"
+                                class="rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:from-violet-700 hover:to-purple-700 hover:shadow-xl">
+                                Gerar Vídeo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    @endif
 </div>

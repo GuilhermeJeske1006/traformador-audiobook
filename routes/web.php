@@ -9,6 +9,7 @@ use Laravel\Fortify\Features;
 
 Route::get('/', App\Livewire\LandingPage::class)->name('home');
 Route::get('/app', App\Livewire\AudiobookPage::class)->name('app')->middleware(['auth', 'verified', 'subscribed']);
+Route::get('/audiobook/{audiobookId}/customize', App\Livewire\AudiobookCustomization::class)->name('audiobook.customize')->middleware(['auth', 'verified', 'subscribed']);
 Route::get('/subscription/create', App\Livewire\Subscription\Create::class)->name('subscription.create')->middleware(['auth']);
 Route::get('/subscription/manage', App\Livewire\Subscription\Manage::class)->name('subscription.manage')->middleware(['auth']);
 

@@ -16,9 +16,13 @@ class AudiobookUpload extends Component
     public $title = '';
     public $uploading = false;
 
+    // Opções de personalização de áudio
+    public $voiceName = 'pt-BR-Standard-A';
+
     protected $rules = [
         'title' => 'required|string|max:255',
         'pdfFile' => 'required|file|mimes:pdf|max:51200',
+        'voiceName' => 'required|string',
     ];
 
     protected $messages = [
@@ -51,6 +55,7 @@ class AudiobookUpload extends Component
                 'original_filename' => $this->pdfFile->getClientOriginalName(),
                 'pdf_path' => $path,
                 'status' => 'pending',
+                'voice_name' => $this->voiceName,
             ]);
 
             ProcessAudiobookJob::dispatch($audiobook);
@@ -66,6 +71,19 @@ class AudiobookUpload extends Component
         } finally {
             $this->uploading = false;
         }
+    }
+
+    public function getAvailableVoicesProperty()
+    {
+        return [
+            'pt-BR-Standard-A' => 'Voz Feminina - Padrão A',
+            'pt-BR-Standard-B' => 'Voz Masculina - Padrão B',
+            'pt-BR-Standard-C' => 'Voz Feminina - Padrão C',
+            'pt-BR-Wavenet-A' => 'Voz Feminina - WaveNet A (Premium)',
+            'pt-BR-Wavenet-B' => 'Voz Masculina - WaveNet B (Premium)',
+            'pt-BR-Neural2-A' => 'Voz Feminina - Neural2 A (Melhor)',
+            'pt-BR-Neural2-B' => 'Voz Masculina - Neural2 B (Melhor)',
+        ];
     }
 
     public function render()

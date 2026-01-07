@@ -123,6 +123,36 @@
                     </div>
                 </div>
 
+                <!-- Personalização de Áudio -->
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-700 dark:bg-zinc-900/50">
+                    <h3 class="mb-4 flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-white">
+                        <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                        </svg>
+                        Personalização do Áudio
+                    </h3>
+
+                    <div>
+                        <!-- Voice Selection -->
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
+                                Voz do Narrador
+                            </label>
+                            <select wire:model="voiceName" class="block w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:focus:border-blue-400">
+                                @foreach($this->availableVoices as $voice => $label)
+                                    <option value="{{ $voice }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                Esta voz será usada para narrar o texto do PDF
+                            </p>
+                            @error('voiceName')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
                 <button
                     type="submit"

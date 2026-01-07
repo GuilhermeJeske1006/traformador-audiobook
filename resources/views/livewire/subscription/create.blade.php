@@ -9,6 +9,22 @@
             </p>
         </div>
 
+        @if (session()->has('error'))
+            <div class="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 p-4 text-red-800 dark:text-red-200">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 p-4">
+                <ul class="list-disc list-inside text-red-800 dark:text-red-200">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="rounded-3xl bg-gradient-to-br from-blue-600 to-violet-600 p-8 shadow-xl">
             <div class="text-white">
                 <h3 class="text-2xl font-bold">Plano Premium</h3>
@@ -53,19 +69,15 @@
                     </li>
                 </ul>
 
-                <div class="mt-10">
-                    <div id="card-element" class="p-4 bg-white rounded-lg">
-                        <!-- Stripe Card Element will be inserted here -->
-                    </div>
-                    <div id="card-errors" class="mt-2 text-sm text-red-100"></div>
-                </div>
-
                 <button
                     wire:click="subscribe"
-                    id="card-button"
-                    class="mt-6 w-full rounded-lg bg-white px-6 py-4 text-center text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="opacity-50 cursor-not-allowed"
+                    type="button"
+                    class="mt-10 w-full rounded-lg bg-white px-6 py-4 text-center text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Assinar Agora
+                    <span wire:loading.remove>Assinar Agora</span>
+                    <span wire:loading>Processando...</span>
                 </button>
 
                 <p class="mt-4 text-center text-sm text-blue-100">
@@ -82,53 +94,3 @@
     </div>
 </div>
 
-@push('scripts')
-<script src="https://js.stripe.com/v3/"></script>
-<script>
-    const stripe = Stripe('{{ config('cashier.key') }}');
-    const elements = stripe.elements();
-    const cardElement = elements.create('card', {
-        style: {
-            base: {
-                fontSize: '16px',
-                color: '#1f2937',
-                '::placeholder': {
-                    color: '#9ca3af',
-                },
-            },
-        },
-    });
-
-    cardElement.mount('#card-element');
-
-    cardElement.on('change', (event) => {
-        const displayError = document.getElementById('card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
-    });
-
-    const cardButton = document.getElementById('card-button');
-    cardButton.addEventListener('click', async () => {
-        cardButton.disabled = true;
-        cardButton.textContent = 'Processando...';
-
-        const { paymentMethod, error } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: cardElement,
-        });
-
-        if (error) {
-            const displayError = document.getElementById('card-errors');
-            displayError.textContent = error.message;
-            cardButton.disabled = false;
-            cardButton.textContent = 'Assinar Agora';
-        } else {
-            @this.set('paymentMethod', paymentMethod.id);
-            @this.call('subscribe');
-        }
-    });
-</script>
-@endpush
