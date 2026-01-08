@@ -32,7 +32,23 @@ class ProcessAudiobookJob implements ShouldQueue
                 'processing_progress' => 10,
             ]);
 
-            $pdfPath = Storage::disk('public')->path($this->audiobook->pdf_path);
+            // Obtém o conteúdo do PDF do storage (MinIO)
+            $disk = config('filesystems.default');
+            Log::info('Buscando PDF do storage', [
+                'disk' => $disk,
+                'path' => $this->audiobook->pdf_path,
+            ]);
+
+            $pdfContent = Storage::disk($disk)->get($this->audiobook->pdf_path);
+            $pdfPath = sys_get_temp_dir() . '/' . uniqid('pdf_') . '.pdf';
+            file_put_contents($pdfPath, $pdfContent);
+
+            Log::info('PDF temporário criado', [
+                'temp_path' => $pdfPath,
+                'original_path' => $this->audiobook->pdf_path,
+                'file_exists' => file_exists($pdfPath),
+                'file_size' => filesize($pdfPath),
+            ]);
 
             $text = $pdfExtractor->extractText($pdfPath);
 
@@ -58,7 +74,16 @@ class ProcessAudiobookJob implements ShouldQueue
             Log::info('Audiobook processed successfully', [
                 'audiobook_id' => $this->audiobook->id,
             ]);
+
+            // Limpa arquivo temporário
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
         } catch (\Exception $e) {
+            // Limpa arquivo temporário em caso de erro
+            if (isset($pdfPath) && file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
             $this->audiobook->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),

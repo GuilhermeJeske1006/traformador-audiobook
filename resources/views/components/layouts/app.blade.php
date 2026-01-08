@@ -33,20 +33,23 @@
         
                         @endauth
 
-                        <a href="#features"
-                           class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
+                        @if (!request()->routeIs('app')) 
+                            <a href="#features"
+                            class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                             Recursos
                         </a>
 
                         <a href="#how-it-works"
-                           class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
+                            class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                             Como Funciona
                         </a>
 
                         <a href="#pricing"
-                           class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
+                            class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                             Preços
                         </a>
+                        @endif
+                       
                     </div>
 
                     <!-- Desktop User Menu / Auth Buttons -->
@@ -142,21 +145,23 @@
           
                     @endauth
 
-                    <a href="#features"
-                       class="block rounded-md px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white">
-                        Recursos
-                    </a>
+                    @if (!request()->routeIs('app')) 
 
-                    <a href="#how-it-works"
-                       class="block rounded-md px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white">
-                        Como Funciona
-                    </a>
+                        <a href="#features"
+                        class="block rounded-md px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white">
+                            Recursos
+                        </a>
 
-                    <a href="#pricing"
-                       class="block rounded-md px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white">
-                        Preços
-                    </a>
+                        <a href="#how-it-works"
+                        class="block rounded-md px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white">
+                            Como Funciona
+                        </a>
 
+                        <a href="#pricing"
+                        class="block rounded-md px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white">
+                            Preços
+                        </a>
+                    @endif
                     @auth
                         <div class="border-t border-zinc-200 pt-4 dark:border-zinc-800">
                             <div class="flex items-center px-3">

@@ -27,20 +27,10 @@ class TextToSpeechService
     public function convertTextToSpeech(string $text, string $outputFilename): string
     {
         $chunks = $this->splitTextIntoChunks($text, 4500);
-        $path = 'audiobooks/' . $outputFilename;
-        $fullPath = Storage::disk('public')->path($path);
+        $path = 'audios/' . $outputFilename;
 
-        // Cria o diretório se não existir
-        $directory = dirname($fullPath);
-        if (!file_exists($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        // Abre o arquivo para escrita
-        $fileHandle = fopen($fullPath, 'wb');
-        if ($fileHandle === false) {
-            throw new \RuntimeException("Falha ao abrir arquivo para escrita: {$fullPath}");
-        }
+        // Coleta todos os chunks de áudio em memória temporária
+        $audioContent = '';
 
         try {
             foreach ($chunks as $chunk) {
@@ -63,14 +53,17 @@ class TextToSpeechService
 
                 $response = $this->client->synthesizeSpeech($request);
 
-                // Escreve o chunk diretamente no arquivo e libera memória
-                fwrite($fileHandle, $response->getAudioContent());
+                // Acumula o conteúdo de áudio
+                $audioContent .= $response->getAudioContent();
                 unset($response);
                 gc_collect_cycles();
             }
-        } finally {
-            fclose($fileHandle);
+        } catch (\Exception $e) {
+            throw new \RuntimeException("Falha ao gerar áudio: " . $e->getMessage());
         }
+
+        // Salva o arquivo usando o Storage padrão (suporta local ou S3/MinIO)
+        Storage::put($path, $audioContent);
 
         return $path;
     }
@@ -126,22 +119,11 @@ class TextToSpeechService
     {
         // Divide em sentenças individuais para timecodes precisos
         $sentences = $this->extractSentences($text);
-        $path = 'audiobooks/' . $outputFilename;
-        $fullPath = Storage::disk('public')->path($path);
-
-        // Cria o diretório se não existir
-        $directory = dirname($fullPath);
-        if (!file_exists($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        $fileHandle = fopen($fullPath, 'wb');
-        if ($fileHandle === false) {
-            throw new \RuntimeException("Falha ao abrir arquivo para escrita: {$fullPath}");
-        }
+        $path = 'audios/' . $outputFilename;
 
         $allTimecodes = [];
         $cumulativeTime = 0.0;
+        $audioContent = '';
 
         try {
             // Agrupa sentenças em chunks para evitar muitas chamadas à API
@@ -170,12 +152,14 @@ class TextToSpeechService
 
                 $response = $this->client->synthesizeSpeech($request);
 
-                // Escreve áudio
-                fwrite($fileHandle, $response->getAudioContent());
+                $chunkAudio = $response->getAudioContent();
+
+                // Acumula áudio
+                $audioContent .= $chunkAudio;
 
                 // Calcula duração real do chunk
                 $tempFile = tempnam(sys_get_temp_dir(), 'audio_chunk_');
-                file_put_contents($tempFile, $response->getAudioContent());
+                file_put_contents($tempFile, $chunkAudio);
                 $chunkDuration = $this->getAudioDurationFromFile($tempFile);
                 unlink($tempFile);
 
@@ -201,15 +185,23 @@ class TextToSpeechService
                     $cumulativeTime += $sentenceDuration;
                 }
 
-                unset($response);
+                unset($response, $chunkAudio);
                 gc_collect_cycles();
             }
-        } finally {
-            fclose($fileHandle);
+        } catch (\Exception $e) {
+            throw new \RuntimeException("Falha ao gerar áudio com timecodes: " . $e->getMessage());
         }
 
+        // Salva o arquivo usando o Storage padrão
+        Storage::put($path, $audioContent);
+
+        // Calcula duração total real do arquivo final
+        $tempFile = tempnam(sys_get_temp_dir(), 'audio_final_');
+        file_put_contents($tempFile, $audioContent);
+        $totalDuration = $this->getAudioDurationFromFile($tempFile);
+        unlink($tempFile);
+
         // Ajusta último timecode para duração total real
-        $totalDuration = $this->getAudioDurationFromFile($fullPath);
         if (count($allTimecodes) > 0) {
             $allTimecodes[count($allTimecodes) - 1]['end_time'] = $totalDuration;
         }

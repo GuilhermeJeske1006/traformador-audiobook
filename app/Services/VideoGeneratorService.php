@@ -28,10 +28,12 @@ class VideoGeneratorService
         // Verifica se FFmpeg está disponível
         $this->checkFFmpegAvailable();
 
-        // Caminhos completos
-        $audioFullPath = Storage::disk('public')->path($audioPath);
+        // Baixa o arquivo de áudio para um arquivo temporário local
+        $audioContent = Storage::get($audioPath);
+        $audioTempPath = sys_get_temp_dir() . '/' . uniqid('audio_') . '.mp3';
+        file_put_contents($audioTempPath, $audioContent);
+
         $videoPath = 'videos/' . $outputFilename;
-        $videoFullPath = Storage::disk('public')->path($videoPath);
 
         // Gera SRT com timecodes reais ou calculados
         if ($timecodes) {
@@ -40,25 +42,32 @@ class VideoGeneratorService
                 'total_subtitles' => count($timecodes),
             ]);
         } else {
-            $srtPath = $this->generateSrtFile($text, $audioFullPath);
+            $srtPath = $this->generateSrtFile($text, $audioTempPath);
             Log::info('Gerando vídeo com timecodes estimados');
         }
 
-        // Cria o diretório se não existir
-        $directory = dirname($videoFullPath);
-        if (!file_exists($directory)) {
-            mkdir($directory, 0755, true);
-        }
+        // Arquivo de vídeo temporário
+        $videoTempPath = sys_get_temp_dir() . '/' . uniqid('video_') . '.mp4';
 
         try {
             // Gera vídeo com legendas fixas usando FFmpeg
-            $this->generateVideo($audioFullPath, $srtPath, $videoFullPath, $title, $customization);
+            $this->generateVideo($audioTempPath, $srtPath, $videoTempPath, $title, $customization);
+
+            // Upload do vídeo para o storage
+            $videoContent = file_get_contents($videoTempPath);
+            Storage::put($videoPath, $videoContent);
 
             return $videoPath;
         } finally {
-            // Remove arquivo SRT temporário
+            // Remove arquivos temporários
             if (file_exists($srtPath)) {
                 unlink($srtPath);
+            }
+            if (file_exists($audioTempPath)) {
+                unlink($audioTempPath);
+            }
+            if (file_exists($videoTempPath)) {
+                unlink($videoTempPath);
             }
         }
     }

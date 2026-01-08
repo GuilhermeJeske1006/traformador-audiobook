@@ -58,16 +58,16 @@ class AudiobookList extends Component
     {
         $audiobook = Audiobook::where('user_id', auth()->id())->findOrFail($id);
 
-        if ($audiobook->pdf_path && \Storage::disk('public')->exists($audiobook->pdf_path)) {
-            \Storage::disk('public')->delete($audiobook->pdf_path);
+        if ($audiobook->pdf_path && \Storage::exists($audiobook->pdf_path)) {
+            \Storage::delete($audiobook->pdf_path);
         }
 
-        if ($audiobook->audio_path && \Storage::disk('public')->exists($audiobook->audio_path)) {
-            \Storage::disk('public')->delete($audiobook->audio_path);
+        if ($audiobook->audio_path && \Storage::exists($audiobook->audio_path)) {
+            \Storage::delete($audiobook->audio_path);
         }
 
-        if ($audiobook->video_path && \Storage::disk('public')->exists($audiobook->video_path)) {
-            \Storage::disk('public')->delete($audiobook->video_path);
+        if ($audiobook->video_path && \Storage::exists($audiobook->video_path)) {
+            \Storage::delete($audiobook->video_path);
         }
 
         $audiobook->delete();
