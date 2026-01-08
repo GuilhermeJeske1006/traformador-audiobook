@@ -9,29 +9,36 @@ O **Transformador de Audiobook** é uma aplicação Laravel que converte arquivo
 - Upload de arquivos PDF
 - Extração automática de texto dos PDFs
 - Conversão de texto em áudio usando Google Cloud Text-to-Speech
-- Processamento assíncrono com filas Redis
+- Processamento assíncrono com filas RabbitMQ
 - Interface web para gerenciamento de audiobooks
 - Acompanhamento em tempo real do progresso de conversão
 - Gerenciamento de autenticação de usuários
+- Sistema de assinaturas com Stripe
+- Personalização de audiobooks (conversão para vídeo)
 
 ## Tecnologias Utilizadas
 
 - **Backend**: Laravel 12
 - **Frontend**: Livewire 3 + Flux UI
 - **Banco de Dados**: MySQL
-- **Filas**: Redis
+- **Filas**: RabbitMQ
+- **Cache**: Redis
+- **Storage**: MinIO (S3-compatible)
 - **Extração de PDF**: Smalot PDF Parser
 - **Text-to-Speech**: Google Cloud Text-to-Speech API
 - **Autenticação**: Laravel Fortify
+- **Pagamentos**: Laravel Cashier + Stripe
 
 ## Requisitos do Sistema
 
 - PHP 8.2 ou superior
 - Composer
 - Node.js e NPM
-- MySQL 5.7 ou superior
+- Docker e Docker Compose (para MySQL, RabbitMQ e MinIO)
 - Redis
 - Conta Google Cloud Platform com Text-to-Speech API habilitada
+- Conta Stripe (para sistema de pagamentos)
+- Stripe CLI (para testar webhooks localmente)
 
 ## Instalação
 
@@ -42,31 +49,48 @@ git clone <url-do-repositorio>
 cd traformador-audiobook
 ```
 
-### 2. Instale as Dependências
+### 2. Inicie os Serviços Docker
+
+Inicie os containers do MySQL, RabbitMQ e MinIO:
+
+```bash
+docker-compose up -d
+```
+
+Verifique se os serviços estão rodando:
+
+```bash
+docker-compose ps
+```
+
+### 3. Instale as Dependências
+
+Utilize o comando de setup automático:
+
+```bash
+composer run setup
+```
+
+Este comando irá:
+- Instalar dependências do Composer
+- Criar o arquivo `.env` se não existir
+- Gerar a chave da aplicação
+- Executar as migrations
+- Instalar dependências do NPM
+- Compilar os assets
+
+Ou instale manualmente:
 
 ```bash
 composer install
 npm install
 ```
 
-### 3. Configure o Ambiente
+### 5. Configure as Variáveis de Ambiente
 
-Copie o arquivo de exemplo de configuração:
+Edite o arquivo `.env` e configure as seguintes variáveis:
 
-```bash
-cp .env.example .env
-```
-
-Gere a chave da aplicação:
-
-```bash
-php artisan key:generate
-```
-
-### 4. Configure o Banco de Dados
-
-Edite o arquivo `.env` e configure suas credenciais do MySQL:
-
+#### Banco de Dados (MySQL via Docker)
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -76,27 +100,40 @@ DB_USERNAME=root
 DB_PASSWORD=sua_senha
 ```
 
-Crie o banco de dados:
-
-```bash
-mysql -u root -p -e "CREATE DATABASE traformador_audiobook CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+#### RabbitMQ (via Docker)
+```env
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_VHOST=/
+RABBITMQ_LOGIN=guest
+RABBITMQ_PASSWORD=guest
+RABBITMQ_QUEUE=audiobooks
+QUEUE_CONNECTION=rabbitmq
 ```
 
-Execute as migrations:
-
-```bash
-php artisan migrate
-```
-
-### 5. Configure o Redis
-
-Certifique-se de que o Redis está instalado e rodando. No arquivo `.env`:
-
+#### Redis
 ```env
 REDIS_HOST=127.0.0.1
 REDIS_PASSWORD=null
 REDIS_PORT=6379
-QUEUE_CONNECTION=redis
+CACHE_STORE=redis
+```
+
+#### MinIO (Storage S3-compatible via Docker)
+```env
+FILESYSTEM_DISK=minio
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_REGION=us-east-1
+MINIO_BUCKET=audiobooks
+MINIO_ENDPOINT=http://localhost:9100
+
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=audiobooks
+AWS_ENDPOINT=http://localhost:9100
+AWS_USE_PATH_STYLE_ENDPOINT=true
 ```
 
 ### 6. Configure o Google Cloud Text-to-Speech
@@ -112,19 +149,22 @@ QUEUE_CONNECTION=redis
 GOOGLE_APPLICATION_CREDENTIALS=/caminho/para/seu/arquivo-credenciais.json
 ```
 
-### 7. Configure o Storage
+### 7. Configure o Stripe
 
-Crie o link simbólico para o storage público:
+1. Crie uma conta no [Stripe](https://stripe.com)
+2. Acesse o Dashboard e pegue suas chaves de teste
+3. Crie um produto e um preço (plano de assinatura)
+4. Configure no `.env`:
 
-```bash
-php artisan storage:link
+```env
+STRIPE_KEY=pk_test_sua_chave_publica
+STRIPE_SECRET=sk_test_sua_chave_secreta
+STRIPE_WEBHOOK_SECRET=whsec_seu_webhook_secret
+STRIPE_PRICE_ID=price_seu_id_de_preco
+CASHIER_CURRENCY=brl
 ```
 
-### 8. Compile os Assets
-
-```bash
-npm run build
-```
+**Importante**: O `STRIPE_WEBHOOK_SECRET` será gerado quando você iniciar o Stripe CLI (veja a seção "Testando Webhooks do Stripe" abaixo).
 
 ## Como Usar
 
@@ -155,7 +195,7 @@ php artisan serve
 
 2. **Inicie o worker de filas** (em outro terminal):
 ```bash
-php artisan queue:work redis --tries=3 --timeout=3600
+php artisan queue:listen --tries=1
 ```
 
 3. **Inicie o Vite** (em outro terminal):
@@ -163,14 +203,58 @@ php artisan queue:work redis --tries=3 --timeout=3600
 npm run dev
 ```
 
+4. **Monitore os logs** (opcional, em outro terminal):
+```bash
+php artisan pail --timeout=0
+```
+
+### Testando Webhooks do Stripe
+
+Para testar webhooks do Stripe em desenvolvimento local:
+
+1. **Instale o Stripe CLI** (se ainda não tiver):
+   - macOS: `brew install stripe/stripe-cli/stripe`
+   - Outras plataformas: [Documentação oficial](https://stripe.com/docs/stripe-cli)
+
+2. **Faça login no Stripe CLI**:
+```bash
+stripe login
+```
+
+3. **Inicie o listener de webhooks**:
+```bash
+stripe listen --forward-to localhost:8000/stripe/webhook
+```
+
+4. **Copie o webhook secret** exibido no terminal (começa com `whsec_...`)
+
+5. **Atualize o `.env`** com o novo webhook secret:
+```env
+STRIPE_WEBHOOK_SECRET=whsec_seu_novo_secret
+```
+
+6. **Limpe o cache de configuração**:
+```bash
+php artisan config:clear
+```
+
+Agora os webhooks do Stripe serão encaminhados para sua aplicação local!
+
+**Testando pagamentos**: Use os [cartões de teste do Stripe](https://stripe.com/docs/testing):
+- Sucesso: `4242 4242 4242 4242`
+- CVV: qualquer 3 dígitos
+- Data: qualquer data futura
+
 ### Acessando a Aplicação
 
 1. Abra o navegador em `http://localhost:8000`
 2. Crie uma conta ou faça login
-3. Acesse a página de upload de audiobooks
-4. Selecione um arquivo PDF e faça o upload
-5. Aguarde o processamento (você pode acompanhar o progresso na interface)
-6. Quando concluído, faça o download do audiobook em MP3
+3. Assine um plano (modo teste do Stripe)
+4. Acesse a página de upload de audiobooks
+5. Selecione um arquivo PDF e faça o upload
+6. Aguarde o processamento (você pode acompanhar o progresso na interface)
+7. Quando concluído, faça o download do audiobook em MP3
+8. Opcionalmente, personalize o audiobook convertendo para vídeo
 
 ## Arquitetura da Aplicação
 
@@ -179,7 +263,7 @@ npm run dev
 ```
 1. Upload do PDF
    ↓
-2. Job enfileirado no Redis (ProcessAudiobookJob)
+2. Job enfileirado no RabbitMQ (ProcessAudiobookJob)
    ↓
 3. Extração de texto do PDF (PdfTextExtractorService)
    ↓
@@ -189,7 +273,25 @@ npm run dev
    ↓
 6. Mesclagem dos áudios em um único arquivo MP3
    ↓
-7. Armazenamento e disponibilização do arquivo
+7. Upload para MinIO (storage S3-compatible)
+   ↓
+8. Disponibilização do arquivo para download
+```
+
+### Fluxo de Assinatura
+
+```
+1. Usuário clica em "Assinar"
+   ↓
+2. Redirecionado para Checkout do Stripe
+   ↓
+3. Stripe processa o pagamento
+   ↓
+4. Webhook enviado para /stripe/webhook
+   ↓
+5. Laravel Cashier atualiza status da assinatura
+   ↓
+6. Usuário ganha acesso aos recursos premium
 ```
 
 ### Estrutura de Diretórios Principais
@@ -199,24 +301,26 @@ app/
 ├── Http/
 │   └── Controllers/       # Controllers da aplicação
 ├── Jobs/
-│   └── ProcessAudiobookJob.php  # Job de processamento
+│   ├── ProcessAudiobookJob.php   # Job de processamento de áudio
+│   └── ProcessVideoJob.php       # Job de conversão para vídeo
+├── Livewire/
+│   ├── AudiobookPage.php         # Página principal de audiobooks
+│   ├── AudiobookCustomization.php # Personalização/conversão vídeo
+│   └── Subscription/             # Componentes de assinatura
 ├── Models/
-│   └── Audiobook.php      # Model do audiobook
+│   ├── Audiobook.php      # Model do audiobook
+│   └── User.php           # Model do usuário (com traits do Cashier)
 └── Services/
     ├── PdfTextExtractorService.php  # Extração de PDF
     └── TextToSpeechService.php      # Conversão TTS
 
+config/
+└── cashier.php            # Configurações do Laravel Cashier
+
 database/
 └── migrations/            # Migrations do banco
 
-resources/
-└── views/                # Views Livewire
-
-storage/
-└── app/
-    └── public/
-        ├── pdfs/         # PDFs enviados
-        └── audiobooks/   # Áudios gerados
+docker-compose.yml         # Serviços Docker (MySQL, RabbitMQ, MinIO)
 ```
 
 ### Principais Componentes
@@ -269,7 +373,7 @@ ini_set('memory_limit', '512M');
 Para PDFs muito grandes, certifique-se de configurar um timeout adequado:
 
 ```bash
-php artisan queue:work redis --timeout=3600
+php artisan queue:listen --timeout=3600
 ```
 
 ### Tamanho Máximo de Upload
@@ -293,8 +397,14 @@ php artisan pail
 ### Verificar Status da Fila
 
 ```bash
-php artisan queue:monitor redis
+php artisan queue:monitor rabbitmq
 ```
+
+### Acessar Interface do RabbitMQ
+
+Acesse `http://localhost:15672` com as credenciais:
+- Usuário: `guest`
+- Senha: `guest`
 
 ### Reiniciar Workers
 
@@ -343,6 +453,43 @@ redis-cli ping
 # Deve retornar: PONG
 ```
 
+### Containers Docker não iniciam
+
+**Solução**: Verifique o status e os logs dos containers:
+
+```bash
+docker-compose ps
+docker-compose logs mysql
+docker-compose logs rabbitmq
+docker-compose logs minio
+```
+
+### RabbitMQ não conecta
+
+**Solução**: Verifique se o container está rodando:
+
+```bash
+docker-compose ps rabbitmq
+```
+
+Se necessário, reinicie:
+
+```bash
+docker-compose restart rabbitmq
+```
+
+### MinIO não está acessível
+
+**Solução**: Acesse o console do MinIO em `http://localhost:9101` com as credenciais do `.env` e verifique se o bucket foi criado.
+
+### Stripe webhook não recebe eventos
+
+**Solução**: Verifique se:
+1. O Stripe CLI está rodando: `stripe listen --forward-to localhost:8000/stripe/webhook`
+2. O servidor Laravel está rodando na porta 8000
+3. O `STRIPE_WEBHOOK_SECRET` no `.env` corresponde ao exibido no Stripe CLI
+4. Você executou `php artisan config:clear` após atualizar o `.env`
+
 ### Google Cloud API retorna erro
 
 **Solução**: Verifique se:
@@ -357,22 +504,29 @@ redis-cli ping
 - Autenticação de usuários via Laravel Fortify
 - Validação de tipos de arquivo no upload
 - Proteção contra CSRF habilitada
+- Webhooks do Stripe validados com assinatura secreta
+- Comunicação segura com Stripe via HTTPS
+- Dados sensíveis de pagamento nunca tocam o servidor (processados pelo Stripe)
 
 ## Performance
 
 ### Otimizações Implementadas
 
-1. **Processamento Assíncrono**: Filas Redis para não bloquear requisições
-2. **Streaming de Áudio**: Escrita direta em arquivo evita acúmulo em memória
-3. **Garbage Collection**: Limpeza explícita de memória após cada chunk
-4. **Chunking Inteligente**: Divisão respeitando limites da API do Google
-5. **Índices no Banco**: Otimização de queries
+1. **Processamento Assíncrono**: Filas RabbitMQ para não bloquear requisições
+2. **Storage Distribuído**: MinIO (S3-compatible) para escalabilidade
+3. **Cache Redis**: Reduz carga no banco de dados
+4. **Streaming de Áudio**: Escrita direta em arquivo evita acúmulo em memória
+5. **Garbage Collection**: Limpeza explícita de memória após cada chunk
+6. **Chunking Inteligente**: Divisão respeitando limites da API do Google
+7. **Índices no Banco**: Otimização de queries
+8. **Docker Compose**: Serviços isolados e escaláveis
 
 ### Capacidade
 
 - **Tamanho médio de PDF**: Até 100 páginas sem problemas
 - **PDFs grandes**: Testado com até 500 páginas
 - **Concurrent jobs**: Configurável via número de workers
+- **Storage**: Ilimitado com MinIO (limitado apenas pelo disco)
 
 ## Contribuindo
 
